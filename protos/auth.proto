@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package auth;
+
+import "commom.proto";
+
+service AuthService {
+
+  rpc Login(LoginRequest)
+      returns (LoginResponse);
+
+  rpc RefreshToken(RefreshTokenRequest)
+      returns (LoginResponse);
+
+  rpc Logout(LogoutRequest)
+      returns (EmptyResponse);
+
+  rpc ValidateToken(ValidateTokenRequest)
+      returns (ValidateTokenResponse);
+}
+
+message EmptyResponse {}
+
+message LoginRequest {
+  string tenantCode = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message LoginResponse {
+
+  string accessToken = 1;
+
+  string refreshToken = 2;
+
+  int32 expiresIn = 3;
+
+  string userId = 4;
+
+  string tenantId = 5;
+
+  repeated string roles = 6;
+
+  repeated common.SystemRole systemRoles = 7;
+}
+
+message RefreshTokenRequest {
+  string refreshToken = 1;
+}
+
+message LogoutRequest {
+  string refreshToken = 1;
+}
+
+message ValidateTokenRequest {
+  string accessToken = 1;
+}
+
+message ValidateTokenResponse {
+
+  bool valid = 1;
+
+  string userId = 2;
+
+  string tenantId = 3;
+
+  repeated string roles = 4;
+
+  repeated common.SystemRole systemRoles = 5;
+}

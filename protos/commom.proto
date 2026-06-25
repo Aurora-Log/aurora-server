@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package common;
+
+enum PlanType {
+  PLAN_TYPE_UNSPECIFIED = 0;
+  STANDARD = 1;
+  ENTERPRISE = 2;
+}
+
+enum TenantStatus {
+  TENANT_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  SUSPENDED = 2;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  INACTIVE = 2;
+  BLOCKED = 3;
+}
+
+// Ma trận 5 Roles trên UI (Bảo vệ chốt chặn)
+enum SystemRole {
+  SYSTEM_ROLE_UNSPECIFIED = 0;
+  SYSTEM_ADMIN = 1;       // Quản lý Tenant, cấu hình Billing SaaS, giám sát lượng Token AI tiêu thụ qua AI Ops Service.
+  TENANT_ADMIN = 2;       // Toàn quyền nội bộ doanh nghiệp (CRUD User, cấu hình ngân sách). KHÔNG xem được dữ liệu Tenant khác. KHÔNG có quyền sửa/xóa Immutable Ledger.
+  OPERATOR = 3;           // Tạo vận đơn, tải chứng từ (Hóa đơn, Packing List) để AI OCR bóc tách, theo dõi bản đồ GPS thời gian thực.
+  CUSTOMS_OFFICER = 4;    // Xem màn hình chẩn đoán sai lệch chứng từ do Compliance RAG highlight bằng AI, duyệt thông quan.
+  FINANCE_OFFICER = 5;    // Phê duyệt chi phí chốt thầu từ sàn Marketplace, theo dõi ví ký quỹ Escrow (đóng băng/giải ngân tiền cho nhà xe).
+}

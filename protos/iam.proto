@@ -1,0 +1,296 @@
+syntax = "proto3";
+
+package iam;
+
+import "google/protobuf/timestamp.proto";
+import "commom.proto";
+
+service IamService {
+
+  // Tenant
+  rpc CreateTenant(CreateTenantRequest)
+      returns (TenantResponse);
+
+  rpc GetTenant(GetTenantRequest)
+      returns (TenantResponse);
+
+  rpc UpdateTenantStatus(UpdateTenantStatusRequest)
+      returns (TenantResponse);
+
+  // User
+  rpc CreateUser(CreateUserRequest)
+      returns (UserResponse);
+
+  rpc GetUser(GetUserRequest)
+      returns (UserResponse);
+
+  rpc GetManyUsers(GetManyUsersRequest)
+      returns (GetManyUsersResponse);
+
+  rpc UpdateUserRoles(UpdateUserRolesRequest)
+      returns (UserResponse);
+
+  rpc UpdateUserStatus(UpdateUserStatusRequest)
+      returns (UserResponse);
+
+  // Role
+  rpc CreateRole(CreateRoleRequest)
+      returns (RoleResponse);
+
+  rpc GetRole(GetRoleRequest)
+      returns (RoleResponse);
+
+  rpc GetManyRoles(GetManyRolesRequest)
+      returns (GetManyRolesResponse);
+
+  rpc UpdateRole(UpdateRoleRequest)
+      returns (RoleResponse);
+
+  rpc DeleteRole(DeleteRoleRequest)
+      returns (EmptyResponse);
+
+  // Permission
+  rpc AssignPermissionsToRole(
+      AssignPermissionsToRoleRequest)
+      returns (RoleResponse);
+
+  rpc GetUserPermissions(
+      GetUserPermissionsRequest)
+      returns (GetUserPermissionsResponse);
+}
+
+
+
+//====================== TENNANT ==========================//
+message TenantResponse {
+
+  string id = 1;
+
+  string name = 2;
+
+  string tenantCode = 3;
+
+  common.PlanType planType = 4;
+
+  common.TenantStatus status = 5;
+
+  string adminEmail = 6;
+
+  google.protobuf.Timestamp createdAt = 7;
+
+  google.protobuf.Timestamp updatedAt = 8;
+}
+
+message CreateTenantRequest {
+
+  string name = 1;
+
+  string tenantCode = 2;
+
+  string adminEmail = 3;
+
+  string adminFirstName = 4;
+
+  string adminLastName = 5;
+
+  common.PlanType planType = 6;
+}
+
+message GetTenantRequest {
+
+  oneof identifier {
+
+    string id = 1;
+
+    string tenantCode = 2;
+  }
+}
+
+message UpdateTenantStatusRequest {
+
+  string tenantId = 1;
+
+  common.TenantStatus status = 2;
+}
+
+
+
+
+//========================== USER =========================//
+message UserResponse {
+
+  string id = 1;
+
+  string firstName = 2;
+
+  string lastName = 3;
+
+  string email = 4;
+
+  string phoneNumber = 5;
+
+  common.UserStatus status = 6;
+
+  repeated string roleIds = 7;
+
+  google.protobuf.Timestamp createdAt = 8;
+
+  google.protobuf.Timestamp updatedAt = 9;
+
+  repeated common.SystemRole systemRoles = 10;
+}
+
+message CreateUserRequest {
+
+  string firstName = 1;
+
+  string lastName = 2;
+
+  string email = 3;
+
+  string phoneNumber = 4;
+
+  repeated string roleIds = 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetManyUsersRequest {
+
+  int32 page = 1;
+
+  int32 limit = 2;
+
+  optional string roleId = 3;
+
+  optional common.UserStatus status = 4;
+}
+
+message GetManyUsersResponse {
+
+  repeated UserResponse users = 1;
+
+  int32 page = 2;
+
+  int32 limit = 3;
+
+  int32 totalItems = 4;
+
+  int32 totalPages = 5;
+}
+
+message UpdateUserRolesRequest {
+
+  string userId = 1;
+
+  repeated string roleIds = 2;
+}
+
+message UpdateUserStatusRequest {
+
+  string userId = 1;
+
+  common.UserStatus status = 2;
+}
+
+
+//====================== ROLE ========================//
+message RoleResponse {
+
+  string id = 1;
+
+  string code = 2;
+
+  string name = 3;
+
+  string description = 4;
+
+  repeated string permissionIds = 5;
+
+  google.protobuf.Timestamp createdAt = 6;
+
+  google.protobuf.Timestamp updatedAt = 7;
+}
+
+message CreateRoleRequest {
+
+  string code = 1;
+
+  string name = 2;
+
+  string description = 3;
+}
+
+message GetRoleRequest {
+  string id = 1;
+}
+
+message GetManyRolesRequest {
+
+  int32 page = 1;
+
+  int32 limit = 2;
+}
+
+message GetManyRolesResponse {
+
+  repeated RoleResponse roles = 1;
+
+  int32 page = 2;
+
+  int32 limit = 3;
+
+  int32 totalItems = 4;
+
+  int32 totalPages = 5;
+}
+
+message UpdateRoleRequest {
+
+  string id = 1;
+
+  string name = 2;
+
+  string description = 3;
+}
+
+message DeleteRoleRequest {
+  string id = 1;
+}
+
+//======================= PERMISSION ========================//
+message PermissionInfo {
+
+  string id = 1;
+
+  string code = 2;
+
+  string module = 3;
+
+  string resource = 4;
+
+  string action = 5;
+}
+
+message AssignPermissionsToRoleRequest {
+
+  string roleId = 1;
+
+  repeated string permissionIds = 2;
+}
+
+message GetUserPermissionsRequest {
+
+  string userId = 1;
+}
+
+message GetUserPermissionsResponse {
+
+  string userId = 1;
+
+  repeated string roleIds = 2;
+
+  repeated PermissionInfo permissions = 3;
+}
