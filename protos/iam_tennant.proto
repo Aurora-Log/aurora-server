@@ -18,7 +18,7 @@ service IamService {
       returns (TenantResponse);
 
   // User
-  rpc CreateUser(CreateUserRequest)
+  rpc InviteUser(InviteUserRequest)
       returns (UserResponse);
 
   rpc GetUser(GetUserRequest)
@@ -27,14 +27,14 @@ service IamService {
   rpc GetManyUsers(GetManyUsersRequest)
       returns (GetManyUsersResponse);
 
-  rpc UpdateUserRoles(UpdateUserRolesRequest)
+  rpc AssignRoles(AssignRolesRequest)
       returns (UserResponse);
 
-  rpc UpdateUserStatus(UpdateUserStatusRequest)
+  rpc SuspendUser(SuspendUserRequest)
       returns (UserResponse);
 
   // Role
-  rpc CreateRole(CreateRoleRequest)
+  rpc CreateCustomRole(CreateCustomRoleRequest)
       returns (RoleResponse);
 
   rpc GetRole(GetRoleRequest)
@@ -140,7 +140,7 @@ message UserResponse {
   repeated common.SystemRole systemRoles = 10;
 }
 
-message CreateUserRequest {
+message InviteUserRequest {
 
   string firstName = 1;
 
@@ -181,14 +181,14 @@ message GetManyUsersResponse {
   int32 totalPages = 5;
 }
 
-message UpdateUserRolesRequest {
+message AssignRolesRequest {
 
   string userId = 1;
 
   repeated string roleIds = 2;
 }
 
-message UpdateUserStatusRequest {
+message SuspendUserRequest {
 
   string userId = 1;
 
@@ -214,7 +214,7 @@ message RoleResponse {
   google.protobuf.Timestamp updatedAt = 7;
 }
 
-message CreateRoleRequest {
+message CreateCustomRoleRequest {
 
   string code = 1;
 

@@ -6,7 +6,13 @@ import "commom.proto";
 
 service AuthService {
 
+  rpc IdentifyUser(IdentifyUserRequest)
+      returns (IdentifyUserResponse);
+
   rpc Login(LoginRequest)
+      returns (LoginResponse);
+
+  rpc CompleteInvitation(CompleteInvitationRequest)
       returns (LoginResponse);
 
   rpc RefreshToken(RefreshTokenRequest)
@@ -17,6 +23,12 @@ service AuthService {
 
   rpc ValidateToken(ValidateTokenRequest)
       returns (ValidateTokenResponse);
+
+  rpc ForgotPassword(ForgotPasswordRequest)
+      returns (EmptyResponse);
+
+  rpc ConfirmForgotPassword(ConfirmForgotPasswordRequest)
+      returns (EmptyResponse);
 }
 
 message EmptyResponse {}
@@ -42,6 +54,8 @@ message LoginResponse {
   repeated string roles = 6;
 
   repeated common.SystemRole systemRoles = 7;
+
+  repeated string permissions = 8;
 }
 
 message RefreshTokenRequest {
@@ -67,4 +81,32 @@ message ValidateTokenResponse {
   repeated string roles = 4;
 
   repeated common.SystemRole systemRoles = 5;
+
+  repeated string permissions = 6;
+}
+
+message IdentifyUserRequest {
+  string email = 1;
+}
+
+message IdentifyUserResponse {
+  bool exists = 1;
+  string tenantCode = 2;
+  string userType = 3;
+}
+
+message CompleteInvitationRequest {
+  string email = 1;
+  string newPassword = 2;
+  string confirmationCode = 3;
+}
+
+message ForgotPasswordRequest {
+  string email = 1;
+}
+
+message ConfirmForgotPasswordRequest {
+  string email = 1;
+  string newPassword = 2;
+  string confirmationCode = 3;
 }
