@@ -1,4 +1,4 @@
-namespace shared.Entity;
+namespace Shared.Entity;
 
 public interface ITenantEntity
 {

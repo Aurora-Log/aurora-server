@@ -1,4 +1,4 @@
-﻿namespace shared;
+﻿namespace Shared;
 
 public class Class1
 {

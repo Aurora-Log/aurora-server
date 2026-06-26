@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package auth;
 
-import "commom.proto";
+import "common.proto";
+option csharp_namespace = "Auth.Grpc";
+
 
 service AuthService {
 
