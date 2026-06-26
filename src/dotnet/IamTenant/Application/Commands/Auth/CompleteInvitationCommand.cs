@@ -1,11 +1,13 @@
 using IamTenant.Application.Interfaces;
+using IamTenant.Infrastructure.Persistences;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace IamTenant.Application.Commands.Auth;
 
 public record CompleteInvitationCommand(string Email, string NewPassword, string ConfirmationCode) : IRequest<LoginResult>;
 
-public class CompleteInvitationCommandHandler(ICognitoAuthService cognitoService) : IRequestHandler<CompleteInvitationCommand, LoginResult>
+public class CompleteInvitationCommandHandler(ICognitoAuthService cognitoService, IamTenantDbContext context) : IRequestHandler<CompleteInvitationCommand, LoginResult>
 {
     public async Task<LoginResult> Handle(CompleteInvitationCommand request, CancellationToken cancellationToken)
     {
@@ -24,17 +26,37 @@ public class CompleteInvitationCommandHandler(ICognitoAuthService cognitoService
             cancellationToken);
 
         // 2. Fetch User and Permissions from DB via internal command/query (reusing logic)
-        // We can just call LoginCommand handler logic, but since we already have the token, we just need to build LoginResult.
-        // Let's just return a placeholder or refactor LoginCommand to share the DB fetch.
-        // For simplicity in this demo:
+        var user = await context.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                    .ThenInclude(r => r!.RolePermissions)
+                        .ThenInclude(rp => rp.Permission)
+            .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken)
+            ?? throw new Exception("User not found in database.");
+
+        var roles = user.UserRoles.Select(ur => ur.Role!.Code).Distinct().ToList();
+
+        var permissions = user.UserRoles
+            .SelectMany(ur => ur.Role!.RolePermissions)
+            .Select(rp => rp.Permission!.Code)
+            .Distinct()
+            .ToList();
+
+        // 3. Mark User as ACTIVE if they were PENDING/INVITED
+        if (user.Status != "ACTIVE")
+        {
+            user.Status = "ACTIVE";
+            await context.SaveChangesAsync(cancellationToken);
+        }
 
         return new LoginResult(
             authResult.AccessToken,
             authResult.RefreshToken,
             authResult.ExpiresIn,
-            "USER_ID", // TODO: fetch from DB
-            "TENANT_ID",
-            new List<string>(),
-            new List<string>());
+            user.Id.ToString(),
+            user.TenantId == Guid.Empty ? "" : user.TenantId.ToString(),
+            roles,
+            permissions);
     }
 }

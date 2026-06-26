@@ -27,7 +27,6 @@ public class CreateStaffHandler(
         if (!currentUser.TenantId.HasValue)
             throw new UnauthorizedAccessException("TenantId is required.");
 
-        // Global Query Filter đã giới hạn theo TenantId — không cần thêm .Where(TenantId)
         var tenant = await context.Tenants.FirstOrDefaultAsync(cancellationToken: cancellationToken)
             ?? throw new Exception("Tenant not found.");
 

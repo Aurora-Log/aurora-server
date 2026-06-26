@@ -24,11 +24,11 @@ public static class PermissionConstants
         public const string BillingSettlement = "billing_settlement";
         public const string AiOps = "aiops";
 
-        public static readonly IReadOnlyList<string> All = new[]
-        {
+        public static readonly IReadOnlyList<string> All =
+        [
             Bff, Ocr, Compliance, CarrierMarketplace, Negotiation, CustomerAssistant,
             Iam, RoutePlanning, FinancialTax, GpsTracking, BillingSettlement, AiOps
-        };
+        ];
     }
 
     /// <summary>
