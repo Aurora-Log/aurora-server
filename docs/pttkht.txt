@@ -1,0 +1,40 @@
+HRM + Agent + Muilt-tennant: 
+BE: .net + nestjs 
+FE: React - Stitch
+microservices: gRPC - RabbitMQ
+AWS: EKS, ECR, CloudWatch Secrets Manager, EC2 (docker), S3( terraform), NAT, ALB, 2 AZ, EBS volume
+Auth: Cognito
+Cloudflare: R2, DNS
+MQ: RabbitMQ
+Terraform, ArgoCD
+Redis, PostgreSQL: Db per services.
+Docker, Grafana, Prometheus, Loki
+BFF gateway
+Agent Gemini:
+	Function Calling
+	RAG
+	AI Assistant
+Cloudflare -> ALB -> BFF gateway
+
+Service: 
+API Gateway & BFF [CORE]								Tan
+Identity & Tenant Service [CORE]						Tan
+Route Planning Agent Service [AI]						Tan
+GPS Tracking & Monitoring Service [CORE]				Tan
+Financial & Cost Estimation Service [AI + CORE]			Tan
+Billing & Settlement Service [CORE]						Tan
+AI Ops & Monitoring Service [AI + DEVOPS]				Tan
+ 
+Realtime Hub 											Huynh
+Document OCR Agent Service [AI]							Huynh
+Regulatory Compliance RAG Service [AI]					Huynh
+Carrier Marketplace Service [CORE]						Huynh
+Negotiation Agent Service [AI] 							Huynh
+Customer Assistant & Notification Service [AI + CORE]	Huynh
+
+
+S3 key nên phân tenant:
+
+s3://hrm-private-docs/tenants/{tenantId}/employees/{employeeId}/documents/{fileId}
+
+
