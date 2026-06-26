@@ -1,40 +1,54 @@
+using System.Text.Json;
 using IamTenant.Domain;
 using IamTenant.Infrastructure.Persistences;
 using IamTenant.Application.DTOs.Tenants;
-using MassTransit;
+using IamTenant.Application.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Shared.Events;
 
 namespace IamTenant.Application.Commands.Tenants;
 
-public record CreateTenantCommand(string Name, string CompanyDomain, string AdminEmail, string? TaxCode = null, string PlanType = "FREE") : IRequest<TenantDto>;
+public record CreateTenantCommand(string Name, string CompanyDomain, string AdminEmail, Guid IdempotencyKey, string? TaxCode = null, string PlanType = "FREE") : IRequest<TenantDto>;
 
-public class CreateTenantHandler(IamTenantDbContext context, IPublishEndpoint publishEndpoint) : IRequestHandler<CreateTenantCommand, TenantDto>
+public class CreateTenantHandler(IamTenantDbContext context, ICognitoAuthService cognitoService) : IRequestHandler<CreateTenantCommand, TenantDto>
 {
     public async Task<TenantDto> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
-        // 1. Check if CompanyDomain is already used
-        if (context.Tenants.Any(t => t.CompanyDomain == request.CompanyDomain && !t.IsDeleted))
+        // 0. Idempotency Check
+        var existing = await context.Tenants
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.IdempotencyKey == request.IdempotencyKey, cancellationToken);
+            
+        if (existing is not null)
         {
-            throw new Exception("Company Domain already exists.");
+            return new TenantDto
+            {
+                Id = existing.Id,
+                Code = existing.Code,
+                Name = existing.Name,
+                TaxCode = existing.TaxCode,
+                CompanyDomain = existing.CompanyDomain,
+                PlanType = existing.PlanType,
+                Status = existing.Status.ToString(),
+                CreatedAt = existing.CreatedAt
+            };
+        }
+
+        // 1. Check if CompanyDomain is already used
+        if (await context.Tenants.IgnoreQueryFilters().AnyAsync(t => t.CompanyDomain == request.CompanyDomain && !t.IsDeleted, cancellationToken))
+        {
+            throw new Shared.Exceptions.ConflictException("Company Domain already exists.");
         }
 
         // 2. Validate AdminEmail belongs to CompanyDomain
         if (!request.AdminEmail.EndsWith($"@{request.CompanyDomain}", StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception("Admin Email must belong to the Company Domain.");
+            throw new Shared.Exceptions.DomainException("Admin Email must belong to the Company Domain.");
         }
 
         // 3. Create Tenant
-        var tenant = new Tenant
-        {
-            Name = request.Name,
-            Code = request.CompanyDomain.Split('.')[0].ToUpper(), // Simple code generation
-            CompanyDomain = request.CompanyDomain,
-            TaxCode = request.TaxCode,
-            PlanType = request.PlanType,
-            Status = "ACTIVE"
-        };
+        var tenant = Tenant.Create(request.Name, request.CompanyDomain, request.TaxCode, request.PlanType, request.IdempotencyKey);
 
         context.Tenants.Add(tenant);
 
@@ -43,29 +57,38 @@ public class CreateTenantHandler(IamTenantDbContext context, IPublishEndpoint pu
         {
             TenantId = tenant.Id,
             Email = request.AdminEmail,
-            UserType = "TENANT_ADMIN",
-            Status = "PENDING"
+            UserType = IamTenant.Domain.Enums.UserType.TenantAdmin,
+            Status = IamTenant.Domain.Enums.UserStatus.Invited,
         };
+
+        // Cognito AdminCreateUser
+        var tempPassword = GenerateTempPassword();
+        var cognitoSub = await cognitoService.AdminCreateUserAsync(request.AdminEmail, tempPassword, cancellationToken);
+        adminUser.CognitoSub = cognitoSub;
 
         context.Users.Add(adminUser);
 
-        // 5. Save changes (AuditInterceptor will assign CreatedBy/CreatedAt)
-        await context.SaveChangesAsync(cancellationToken);
-
-        // 6. Generate a dummy token (In real world, maybe call Auth Service or generate JWT here)
-        var token = Guid.CreateVersion7().ToString();
-
-        // 7. Publish Event
+        // 5. Publish Event via Outbox
         var tenantAdminCreatedEvent = new TenantAdminCreatedEvent
         {
             TenantId = tenant.Id,
             TenantName = tenant.Name,
             UserId = adminUser.Id,
-            Email = adminUser.Email,
-            InvitationToken = token
+            Email = adminUser.Email
         };
 
-        await publishEndpoint.Publish(tenantAdminCreatedEvent, cancellationToken);
+        var outboxMessage = new OutboxMessage
+        {
+            EventType = nameof(TenantAdminCreatedEvent),
+            Payload = JsonSerializer.Serialize(tenantAdminCreatedEvent),
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        context.OutboxMessages.Add(outboxMessage);
+
+        // 6. Save changes (AuditInterceptor will assign CreatedBy/CreatedAt)
+        // Transaction is atomic because we save entities and outbox messages together
+        await context.SaveChangesAsync(cancellationToken);
 
         return new TenantDto
         {
@@ -75,8 +98,13 @@ public class CreateTenantHandler(IamTenantDbContext context, IPublishEndpoint pu
             TaxCode = tenant.TaxCode,
             CompanyDomain = tenant.CompanyDomain,
             PlanType = tenant.PlanType,
-            Status = tenant.Status,
+            Status = tenant.Status.ToString(),
             CreatedAt = tenant.CreatedAt
         };
+    }
+
+    private static string GenerateTempPassword()
+    {
+        return "TempP@ssw0rd!" + Guid.NewGuid().ToString("N")[..8];
     }
 }

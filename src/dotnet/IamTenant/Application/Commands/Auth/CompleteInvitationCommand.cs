@@ -2,6 +2,7 @@ using IamTenant.Application.Interfaces;
 using IamTenant.Infrastructure.Persistences;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using IamTenant.Domain.Enums;
 
 namespace IamTenant.Application.Commands.Auth;
 
@@ -44,9 +45,9 @@ public class CompleteInvitationCommandHandler(ICognitoAuthService cognitoService
             .ToList();
 
         // 3. Mark User as ACTIVE if they were PENDING/INVITED
-        if (user.Status != "ACTIVE")
+        if (user.Status != UserStatus.Active)
         {
-            user.Status = "ACTIVE";
+            user.Status = UserStatus.Active;
             await context.SaveChangesAsync(cancellationToken);
         }
 

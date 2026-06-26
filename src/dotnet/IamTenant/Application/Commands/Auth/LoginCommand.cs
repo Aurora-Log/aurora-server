@@ -18,38 +18,41 @@ public class LoginCommandHandler(ICognitoAuthService cognitoService, IamTenantDb
 
         if (authResult.Session != null)
         {
-            throw new Exception("NEW_PASSWORD_REQUIRED. Please complete invitation.");
+            throw new Shared.Exceptions.ForbiddenException("NEW_PASSWORD_REQUIRED. Please complete invitation.");
         }
 
         // 2. Fetch User and Permissions from DB
-        var user = await context.Users
+        var userData = await context.Users
             .IgnoreQueryFilters()
-            .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                    .ThenInclude(r => r!.RolePermissions)
-                        .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken);
+            .AsNoTracking()
+            .Where(u => u.Email == request.Email && !u.IsDeleted)
+            .Select(u => new
+            {
+                u.Id,
+                u.TenantId,
+                u.Status,
+                u.PermissionVersion,
+                Roles = u.UserRoles.Select(ur => ur.Role!.Code).ToList(),
+                Permissions = u.UserRoles
+                    .SelectMany(ur => ur.Role!.RolePermissions)
+                    .Select(rp => rp.Permission!.Code)
+                    .Distinct()
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (user == null)
+        if (userData == null)
         {
-            throw new Exception("User not found in database.");
+            throw new Shared.Exceptions.NotFoundException("User not found");
         }
-
-        var roles = user.UserRoles.Select(ur => ur.Role!.Code).Distinct().ToList();
-
-        var permissions = user.UserRoles
-            .SelectMany(ur => ur.Role!.RolePermissions)
-            .Select(rp => rp.Permission!.Code)
-            .Distinct()
-            .ToList();
 
         return new LoginResult(
             authResult.AccessToken,
             authResult.RefreshToken,
             authResult.ExpiresIn,
-            user.Id.ToString(),
-            user.TenantId == Guid.Empty ? "" : user.TenantId.ToString(),
-            roles,
-            permissions);
+            userData.Id.ToString(),
+            userData.TenantId == Guid.Empty ? "" : userData.TenantId.ToString(),
+            userData.Roles,
+            userData.Permissions);
     }
 }

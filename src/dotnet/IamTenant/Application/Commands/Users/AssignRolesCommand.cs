@@ -51,8 +51,8 @@ public class AssignRolesHandler(
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            UserType = user.UserType,
-            Status = user.Status,
+            UserType = user.UserType.ToString(),
+            Status = user.Status.ToString(),
             CreatedAt = user.CreatedAt
         };
     }

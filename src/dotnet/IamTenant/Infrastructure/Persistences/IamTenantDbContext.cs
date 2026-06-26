@@ -26,6 +26,7 @@ public class IamTenantDbContext : DbContext
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -56,8 +57,8 @@ public class IamTenantDbContext : DbContext
             e.Property(u => u.FirstName).HasMaxLength(100);
             e.Property(u => u.LastName).HasMaxLength(100);
             e.Property(u => u.CognitoSub).HasMaxLength(128);
-            e.Property(u => u.UserType).HasMaxLength(50);
-            e.Property(u => u.Status).HasMaxLength(50);
+            e.Property(u => u.UserType).HasConversion<string>().HasMaxLength(50);
+            e.Property(u => u.Status).HasConversion<string>().HasMaxLength(50);
         });
 
         modelBuilder.Entity<Tenant>(e =>
@@ -71,7 +72,7 @@ public class IamTenantDbContext : DbContext
             e.Property(t => t.CompanyDomain).HasMaxLength(100).IsRequired();
             e.Property(t => t.TaxCode).HasMaxLength(50);
             e.Property(t => t.PlanType).HasMaxLength(50);
-            e.Property(t => t.Status).HasMaxLength(50);
+            e.Property(t => t.Status).HasConversion<string>().HasMaxLength(50);
         });
 
         modelBuilder.Entity<Role>(e =>
@@ -99,6 +100,12 @@ public class IamTenantDbContext : DbContext
         // Composite PKs cho junction tables
         modelBuilder.Entity<UserRole>().HasKey(ur => new { ur.UserId, ur.RoleId });
         modelBuilder.Entity<RolePermission>().HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+        modelBuilder.Entity<OutboxMessage>(e =>
+        {
+            e.Property(o => o.EventType).HasMaxLength(256).IsRequired();
+            e.Property(o => o.Payload).IsRequired();
+        });
 
         // ============================================================
         // SEED: System Roles & Permissions mặc định

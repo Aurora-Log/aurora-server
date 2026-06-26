@@ -4,7 +4,7 @@ using Shared.Security;
 
 namespace IamTenant.Infrastructure.Interceptors;
 
-public class MetadataInterceptor(CurrentUserService currentUserService) : Interceptor
+public class MetadataInterceptor() : Interceptor
 {
     public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
         TRequest request,
@@ -16,23 +16,24 @@ public class MetadataInterceptor(CurrentUserService currentUserService) : Interc
         var traceId = headers.FirstOrDefault(h => h.Key.Equals("x-trace-id", StringComparison.OrdinalIgnoreCase))?.Value;
         var tenantId = headers.FirstOrDefault(h => h.Key.Equals("x-tenant-id", StringComparison.OrdinalIgnoreCase))?.Value;
         var userId = headers.FirstOrDefault(h => h.Key.Equals("x-user-id", StringComparison.OrdinalIgnoreCase))?.Value;
-        var permissions = headers.FirstOrDefault(h => h.Key.Equals("x-user-permissions", StringComparison.OrdinalIgnoreCase))?.Value;
+        var permissionsRaw = headers.FirstOrDefault(h => h.Key.Equals("x-user-permissions", StringComparison.OrdinalIgnoreCase))?.Value;
 
-        currentUserService.TraceId = traceId;
+        traceId ??= Guid.NewGuid().ToString(); 
 
         if (Guid.TryParse(tenantId, out var parsedTenantId))
         {
-            currentUserService.TenantId = parsedTenantId;
+            tenantId = parsedTenantId.ToString();
         }
 
         if (Guid.TryParse(userId, out var parsedUserId))
         {
-            currentUserService.UserId = parsedUserId;
+            userId = parsedUserId.ToString();
         }
 
-        if (!string.IsNullOrWhiteSpace(permissions))
+        List<string> permissionList = [];
+        if (!string.IsNullOrWhiteSpace(permissionsRaw))
         {
-            currentUserService.Permissions = permissions.Split(',').Select(p => p.Trim()).ToList();
+            permissionList = permissionsRaw.Split(',').Select(p => p.Trim()).ToList();
         }
 
         return await continuation(request, context);

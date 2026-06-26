@@ -22,14 +22,11 @@ public class ResetStaffPasswordHandler(IamTenantDbContext context, IPublishEndpo
             u => u.Id == request.UserId, cancellationToken)
             ?? throw new Exception("Staff not found.");
 
-        var resetToken = Guid.CreateVersion7().ToString("N");
-
         await publishEndpoint.Publish(new TenantStaffPasswordResetEvent
         {
             TenantId = staffUser.TenantId,
             UserId = staffUser.Id,
             Email = staffUser.Email,
-            ResetToken = resetToken
         }, cancellationToken);
     }
 }

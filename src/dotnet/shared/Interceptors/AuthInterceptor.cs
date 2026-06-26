@@ -10,7 +10,7 @@ namespace Shared.Interceptors;
 /// populate ICurrentUserService để tất cả handlers downstream dùng được.
 /// Mọi gRPC service đều phải đăng ký interceptor này.
 /// </summary>
-public class AuthInterceptor(ICurrentUserService currentUser, ILogger<AuthInterceptor> logger)
+public class AuthInterceptor(ICurrentUserContext currentUser, ILogger<AuthInterceptor> logger)
     : Interceptor
 {
     public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
@@ -42,12 +42,17 @@ public class AuthInterceptor(ICurrentUserService currentUser, ILogger<AuthInterc
         var versionStr = headers.GetValue(GrpcMetadataKeys.PermissionVersion);
         var roleIdsStr = headers.GetValue(GrpcMetadataKeys.RoleIds);
 
-        if (Guid.TryParse(userIdStr, out var userId)) currentUser.UserId = userId;
-        if (Guid.TryParse(tenantIdStr, out var tenantId)) currentUser.TenantId = tenantId;
-        if (int.TryParse(versionStr, out var version)) currentUser.PermissionVersion = version;
+        Guid? parsedUserId = null;
+        Guid? parsedTenantId = null;
+        int? parsedVersion = null;
 
-        currentUser.TraceId = traceId;
-        currentUser.RoleIds = roleIdsStr?.Split(',').ToList() ?? [];
+        if (Guid.TryParse(userIdStr, out var userId)) parsedUserId = userId;
+        if (Guid.TryParse(tenantIdStr, out var tenantId)) parsedTenantId = tenantId;
+        if (int.TryParse(versionStr, out var version)) parsedVersion = version;
+
+        var roleIds = roleIdsStr?.Split(',').ToList() ?? new List<string>();
+
+        currentUser.Populate(parsedUserId, parsedTenantId, traceId, parsedVersion, roleIds, new List<string>());
 
         logger.LogDebug("AuthInterceptor: UserId={UserId} TenantId={TenantId} Version={Version}",
             currentUser.UserId, currentUser.TenantId, currentUser.PermissionVersion);

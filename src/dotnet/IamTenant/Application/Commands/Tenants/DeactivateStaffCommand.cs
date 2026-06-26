@@ -10,13 +10,11 @@ public class DeactivateStaffHandler(IamTenantDbContext context) : IRequestHandle
 {
     public async Task Handle(DeactivateStaffCommand request, CancellationToken cancellationToken)
     {
-        var staffUser = await context.Users.FirstOrDefaultAsync(u => u.Id == request.Id && u.TenantId == request.TenantId && !u.IsDeleted, cancellationToken);
-        if (staffUser == null)
-        {
-            throw new Exception("Staff not found");
-        }
+        var staffUser = await context.Users
+            .FirstOrDefaultAsync(u => u.Id == request.Id && u.TenantId == request.TenantId && !u.IsDeleted, cancellationToken)
+            ?? throw new Exception("Staff not found");
 
-        staffUser.Status = "SUSPENDED";
+        staffUser.Status = Domain.Enums.UserStatus.Blocked;
 
         await context.SaveChangesAsync(cancellationToken);
     }

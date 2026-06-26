@@ -23,16 +23,23 @@ public class AssignPermissionsToRoleHandler(
         var role = await context.Roles
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == request.RoleId, cancellationToken)
-            ?? throw new Exception("Role not found.");
+            ?? throw new Shared.Exceptions.NotFoundException("Role not found.");
 
         // Replace all current permissions
         context.RolePermissions.RemoveRange(role.RolePermissions);
 
-        foreach (var permId in request.PermissionIds)
-        {
-            var permExists = await context.Permissions.AnyAsync(p => p.Id == permId, cancellationToken);
-            if (!permExists) throw new Exception($"Permission {permId} not found.");
+        // Batch query for permissions to avoid N+1
+        var validIds = await context.Permissions
+            .Where(p => request.PermissionIds.Contains(p.Id))
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
 
+        var invalidIds = request.PermissionIds.Except(validIds).ToList();
+        if (invalidIds.Any())
+            throw new Shared.Exceptions.NotFoundException($"Permissions not found: {string.Join(", ", invalidIds)}");
+
+        foreach (var permId in validIds)
+        {
             role.RolePermissions.Add(new IamTenant.Domain.RolePermission
             {
                 RoleId = role.Id,
@@ -40,18 +47,24 @@ public class AssignPermissionsToRoleHandler(
             });
         }
 
-        await context.SaveChangesAsync(cancellationToken);
-
-        // Invalidate Redis cache cho tất cả user có role này
-        var affectedUserIds = await context.UserRoles
+        // Increment PermissionVersion for affected users
+        var affectedUsers = await context.UserRoles
             .Where(ur => ur.RoleId == request.RoleId)
-            .Select(ur => ur.UserId)
+            .Select(ur => ur.User)
             .ToListAsync(cancellationToken);
 
-        foreach (var userId in affectedUserIds)
+        foreach (var user in affectedUsers)
         {
-            await permissionCache.InvalidateAsync(userId, cancellationToken);
+            if (user != null)
+            {
+                user.PermissionVersion++;
+                await permissionCache.InvalidateAsync(user.Id, cancellationToken);
+            }
         }
+
+        await context.SaveChangesAsync(cancellationToken);
+
+
 
         return new RoleDto
         {

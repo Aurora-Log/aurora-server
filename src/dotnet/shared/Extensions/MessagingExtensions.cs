@@ -17,7 +17,9 @@ public static class SharedServiceExtensions
     public static IServiceCollection AddSharedServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Security context — Scoped để mỗi request có instance riêng
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<CurrentUserService>();
+        services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<CurrentUserService>());
+        services.AddScoped<ICurrentUserContext>(sp => sp.GetRequiredService<CurrentUserService>());
 
         // Redis Permission Cache
         var redisConn = configuration["Redis:ConnectionString"]

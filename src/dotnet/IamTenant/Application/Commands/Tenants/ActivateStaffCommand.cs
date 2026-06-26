@@ -14,7 +14,7 @@ public class ActivateStaffHandler(IamTenantDbContext context) : IRequestHandler<
             .FirstOrDefaultAsync(u => u.Id == request.Id && u.TenantId == request.TenantId && !u.IsDeleted, cancellationToken)
             ?? throw new Exception("Staff not found");
 
-        staffUser.Status = "ACTIVE";
+        staffUser.Status = Domain.Enums.UserStatus.Active;
 
         await context.SaveChangesAsync(cancellationToken);
     }

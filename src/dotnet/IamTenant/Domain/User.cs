@@ -3,8 +3,6 @@ namespace IamTenant.Domain;
 
 public class User : TenantAuditableEntity
 {
-    // Nullable for System Admin (who don't belong to a specific tenant but manage them all)
-
     public string CognitoSub { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
 
@@ -15,13 +13,21 @@ public class User : TenantAuditableEntity
     public string? StaffCode { get; set; }
     public string? Department { get; set; }
 
-    public string UserType { get; set; } = string.Empty; // SYSTEM_ADMIN, TENANT_ADMIN, TENANT_STAFF
-    public string Status { get; set; } = "INVITED"; // INVITED, ACTIVE, SUSPENDED, BLOCKED
+    public Enums.UserType UserType { get; set; } = Enums.UserType.TenantStaff;
+    public Enums.UserStatus Status { get; set; } = Enums.UserStatus.Invited;
+    public Enums.StaffType StaffType {get; set;} = Enums.StaffType.Normal;
 
-    public bool IsDeleted { get; set; }
+    public int PermissionVersion { get; set; } = 1;
 
+    public DateTimeOffset? DeletedAt { get; set; }
+    public bool IsDeleted { get; private set; }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+    }
 
     public Tenant? Tenant { get; set; }
     public ICollection<UserRole> UserRoles { get; set; } = [];
 }
-

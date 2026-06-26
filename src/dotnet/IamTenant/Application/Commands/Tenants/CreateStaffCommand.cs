@@ -40,8 +40,8 @@ public class CreateStaffHandler(
             Email = request.Email,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            UserType = "TENANT_STAFF",
-            Status = "INVITED"
+            UserType = Domain.Enums.UserType.TenantStaff,
+            Status = Domain.Enums.UserStatus.Invited,
         };
 
         context.Users.Add(staffUser);
@@ -56,7 +56,6 @@ public class CreateStaffHandler(
             Email = staffUser.Email,
             FirstName = staffUser.FirstName,
             LastName = staffUser.LastName,
-            InvitationToken = invitationToken
         }, cancellationToken);
 
         return new StaffDto
@@ -66,8 +65,8 @@ public class CreateStaffHandler(
             Email = staffUser.Email,
             FirstName = staffUser.FirstName,
             LastName = staffUser.LastName,
-            UserType = staffUser.UserType,
-            Status = staffUser.Status,
+            UserType = staffUser.UserType.ToString(),
+            Status = staffUser.Status.ToString(),
             CreatedAt = staffUser.CreatedAt
         };
     }

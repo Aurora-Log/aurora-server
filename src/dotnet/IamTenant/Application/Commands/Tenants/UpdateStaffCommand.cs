@@ -27,8 +27,8 @@ public class UpdateStaffHandler(IamTenantDbContext context) : IRequestHandler<Up
             Email = staffUser.Email,
             FirstName = staffUser.FirstName,
             LastName = staffUser.LastName,
-            UserType = staffUser.UserType,
-            Status = staffUser.Status,
+            UserType = staffUser.UserType.ToString(),
+            Status = staffUser.Status.ToString(),
             CreatedAt = staffUser.CreatedAt
         };
     }

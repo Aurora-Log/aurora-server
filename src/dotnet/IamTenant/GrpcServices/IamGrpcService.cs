@@ -24,10 +24,14 @@ public class IamGrpcService(IMediator mediator) : IamService.IamServiceBase
     {
         try
         {
+            var idempotencyKeyHeader = context.RequestHeaders.GetValue("idempotency-key");
+            var idempotencyKey = Guid.TryParse(idempotencyKeyHeader, out var key) ? key : Guid.NewGuid();
+
             var dto = await mediator.Send(new CreateTenantCommand(
                 request.Name,
                 request.CompanyDomain,
                 request.AdminEmail,
+                idempotencyKey,
                 PlanType: request.PlanType.ToString()), context.CancellationToken);
 
             return new TenantResponse

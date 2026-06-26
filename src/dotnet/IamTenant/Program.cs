@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc(options =>
 {
     options.Interceptors.Add<AuthInterceptor>(); // Populate ICurrentUserService từ metadata
+    options.Interceptors.Add<ExceptionInterceptor>(); // Global Exception Handling
 });
 
 // ── Shared Services: CurrentUserService, Redis, Interceptors, MassTransit ────
@@ -21,6 +22,9 @@ builder.Services.AddSharedMassTransit(builder.Configuration);
 
 // ── MediatR ───────────────────────────────────────────────────────────────────
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
+// ── Background Jobs ───────────────────────────────────────────────────────────
+builder.Services.AddHostedService<IamTenant.Infrastructure.BackgroundJobs.OutboxProcessorBackgroundService>();
 
 // ── AWS Cognito ───────────────────────────────────────────────────────────────
 builder.Services.Configure<CognitoOptions>(builder.Configuration.GetSection("Cognito"));

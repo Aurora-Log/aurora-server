@@ -1,4 +1,4 @@
-using IamTenant.Infrastructure;
+using IamTenant.Domain.Enums;
 using IamTenant.Infrastructure.Persistences;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,6 @@ public class IdentifyUserQueryHandler(IamTenantDbContext context) : IRequestHand
             return new IdentifyUserResult(false, null, null);
         }
 
-        return new IdentifyUserResult(true, user.Tenant?.Code ?? "SYSTEM", user.UserType);
+        return new IdentifyUserResult(true, user.Tenant?.Code ?? "SYSTEM", user.UserType.ToString());
     }
 }

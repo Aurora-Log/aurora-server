@@ -23,7 +23,7 @@ public class CreateCustomRoleHandler(IamTenantDbContext context, ICurrentUserSer
         var exists = await context.Roles.AnyAsync(
             r => r.Code == request.Code && r.TenantId == currentUser.TenantId, cancellationToken);
         if (exists)
-            throw new Exception($"Role '{request.Code}' already exists in this tenant.");
+            throw new Shared.Exceptions.ConflictException($"Role '{request.Code}' already exists in this tenant.");
 
         var role = new Role
         {
@@ -66,10 +66,10 @@ public class UpdateRoleHandler(IamTenantDbContext context )
         var role = await context.Roles
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new Exception("Role not found.");
+            ?? throw new Shared.Exceptions.NotFoundException("Role not found.");
 
         if (role.IsSystemRole)
-            throw new Exception("System roles cannot be modified.");
+            throw new Shared.Exceptions.ForbiddenException("System roles cannot be modified.");
 
         role.Name = request.Name;
         role.Description = request.Description;
@@ -101,10 +101,10 @@ public class DeleteRoleHandler(IamTenantDbContext context)
     public async Task Handle(DeleteRoleCommand request, CancellationToken cancellationToken)
     {
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new Exception("Role not found.");
+            ?? throw new Shared.Exceptions.NotFoundException("Role not found.");
 
         if (role.IsSystemRole)
-            throw new Exception("System roles cannot be deleted.");
+            throw new Shared.Exceptions.ForbiddenException("System roles cannot be deleted.");
 
         context.Roles.Remove(role);
         await context.SaveChangesAsync(cancellationToken);

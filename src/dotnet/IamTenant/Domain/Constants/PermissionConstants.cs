@@ -8,7 +8,7 @@ public static class PermissionConstants
     public const string Update = "update";
     public const string Delete = "delete";
 
-    // Define Modules / Services
+    // Define Modules / Services            system, admin, staff
     public static class Modules
     {
         public const string Bff = "bff";

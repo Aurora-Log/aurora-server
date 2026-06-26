@@ -24,7 +24,7 @@ public class GetTenantHandler(IamTenantDbContext context) : IRequestHandler<GetT
             TaxCode = tenant.TaxCode,
             CompanyDomain = tenant.CompanyDomain,
             PlanType = tenant.PlanType,
-            Status = tenant.Status,
+            Status = tenant.Status.ToString(),
             CreatedAt = tenant.CreatedAt
         };
     }

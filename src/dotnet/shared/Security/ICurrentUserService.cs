@@ -6,20 +6,35 @@ namespace Shared.Security;
 /// </summary>
 public interface ICurrentUserService
 {
-    Guid? UserId { get; set; }
-    Guid? TenantId { get; set; }
-    string? TraceId { get; set; }
-    int? PermissionVersion { get; set; }
-    List<string> RoleIds { get; set; }
-    List<string> Permissions { get; set; }
+    Guid? UserId { get; }
+    Guid? TenantId { get; }
+    string? TraceId { get; }
+    int? PermissionVersion { get; }
+    IReadOnlyList<string> RoleIds { get; }
+    IReadOnlyList<string> Permissions { get; }
 }
 
-public class CurrentUserService : ICurrentUserService
+public interface ICurrentUserContext : ICurrentUserService
 {
-    public Guid? UserId { get; set; }
-    public Guid? TenantId { get; set; }
-    public string? TraceId { get; set; }
-    public int? PermissionVersion { get; set; }
-    public List<string> RoleIds { get; set; } = [];
-    public List<string> Permissions { get; set; } = [];
+    void Populate(Guid? userId, Guid? tenantId, string? traceId, int? permissionVersion, List<string> roleIds, List<string> permissions);
+}
+
+public class CurrentUserService : ICurrentUserContext
+{
+    public Guid? UserId { get; private set; }
+    public Guid? TenantId { get; private set; }
+    public string? TraceId { get; private set; }
+    public int? PermissionVersion { get; private set; }
+    public IReadOnlyList<string> RoleIds { get; private set; } = [];
+    public IReadOnlyList<string> Permissions { get; private set; } = [];
+
+    public void Populate(Guid? userId, Guid? tenantId, string? traceId, int? permissionVersion, List<string> roleIds, List<string> permissions)
+    {
+        UserId = userId;
+        TenantId = tenantId;
+        TraceId = traceId;
+        PermissionVersion = permissionVersion;
+        RoleIds = roleIds;
+        Permissions = permissions;
+    }
 }

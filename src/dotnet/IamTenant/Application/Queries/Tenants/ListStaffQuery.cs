@@ -24,8 +24,8 @@ public class ListStaffHandler(IamTenantDbContext context) : IRequestHandler<List
                 Email = u.Email,
                 FirstName = u.FirstName,
                 LastName = u.LastName,
-                UserType = u.UserType,
-                Status = u.Status,
+                UserType = u.UserType.ToString(),
+                Status = u.Status.ToString(),
                 CreatedAt = u.CreatedAt
             });
 
