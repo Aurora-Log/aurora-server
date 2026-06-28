@@ -1,0 +1,32 @@
+# Một só kĩ thuật được áp dụng cho IamTenant
+## Restrict Cascade Delete: 
+Đã thay đổi DeleteBehavior thành Restrict trên IamTenantDbContext.cs (Line 118-124). 
+Bất kì thao tác Hard Delete Tenant nào (bằng SQL hay code ngoài) đều sẽ ném lỗi Foreign Key nếu chưa xóa sạch User/Role bên trong, đảm bảo an toàn tuyệt đối.
+
+## SoftDeleteCleanupWorker.cs: 
+Chạy ngầm định kỳ mỗi 24 giờ.
+Sử dụng EF Core 8 ExecuteDeleteAsync() để Hard Delete hàng loạt Users đã bị xóa mềm (IsDeleted == true) quá 40 ngày.
+Tự động xóa AuditLogs đã lưu trữ quá hạn (90 ngày) để tiết kiệm dung lượng database.
+Hoàn toàn bỏ qua Tenant (Tenant sẽ được quản lý bằng quy trình DeleteTenant Workflow thủ công riêng biệt).
+
+## EF Core Global Query Filters (Tenant Isolation):
+Được áp dụng trực tiếp trong `IamTenantDbContext` (`OnModelCreating`), sử dụng `_currentUser.TenantId` để tự động chèn mệnh đề `WHERE TenantId = ...` vào mọi câu query.
+Điều này đảm bảo an toàn tuyệt đối, vô hiệu hóa nguy cơ lộ lọt dữ liệu chéo (Tenant Breakout / IDOR) ngay cả khi dev quên filter.
+
+## Data Projection thay vì Deep Include (Cartesian Explosion Prevention):
+Tuyệt đối không dùng `.Include().ThenInclude()` sâu để lấy Permissions của Role/User. 
+Thay vào đó, sử dụng kĩ thuật Projection (`.Select()`) để lấy trực tiếp các `RoleCodes` và `Permissions` nhằm tránh tình trạng EF Core bị nổ đồ thị bộ nhớ (Cartesian Explosion) và sinh ra câu query khổng lồ.
+
+## Distributed Caching với PermissionVersion (Redis):
+Sử dụng `IPermissionCacheService` qua Redis để lưu cấu hình phân quyền của User (`RoleCodes`, `Permissions`). 
+Điểm đặc biệt là sử dụng biến `PermissionVersion` (được gắn vào JWT). 
+Khi Role bị đổi quyền, `PermissionVersion` của các User liên quan tăng lên, làm JWT cũ invalidate và bắt buộc load lại cache mới, tối ưu tốc độ đọc Token tới mức mili-giây.
+
+## Business Audit Logging (CQRS Friendly):
+Sử dụng Interface `IAuditTrailService` tiêm vào các Command Handlers (thay vì lạm dụng `SaveChangesInterceptor` chỉ thấy được Database Level). 
+Nhờ đó, log ghi nhận được ngữ cảnh nghiệp vụ: *Ai làm (Actor), Làm gì (Action), Tác động lên ai (Resource), Chi tiết (Details)*. 
+Việc thiết kế qua Interface mở đường cho tương lai chuyển đổi sang cơ chế ghi log bất đồng bộ bằng Message Broker mà không phải sửa logic ở Handlers.
+
+## Transactional Outbox Pattern:
+Mọi Event gửi ra ngoài (ví dụ `TenantAdminCreatedEvent`) đều được nén lại vào JSON và lưu vào bảng `OutboxMessages` **cùng trong 1 DbContext Transaction** với logic chính. 
+Một Background Service (hoặc MassTransit) sẽ đọc và Publish sau. Điều này đảm bảo tính nhất quán dữ liệu (Data Consistency) 100% giữa Database và Message Broker dù hệ thống bị crash.

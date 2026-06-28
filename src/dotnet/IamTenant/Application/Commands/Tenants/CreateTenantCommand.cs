@@ -3,6 +3,7 @@ using IamTenant.Domain;
 using IamTenant.Infrastructure.Persistences;
 using IamTenant.Application.DTOs.Tenants;
 using IamTenant.Application.Interfaces;
+using IamTenant.Application.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Events;
@@ -11,7 +12,7 @@ namespace IamTenant.Application.Commands.Tenants;
 
 public record CreateTenantCommand(string Name, string CompanyDomain, string AdminEmail, Guid IdempotencyKey, string? TaxCode = null, string PlanType = "FREE") : IRequest<TenantDto>;
 
-public class CreateTenantHandler(IamTenantDbContext context, ICognitoAuthService cognitoService) : IRequestHandler<CreateTenantCommand, TenantDto>
+public class CreateTenantHandler(IamTenantDbContext context, ICognitoAuthService cognitoService, IAuditTrailService auditTrail) : IRequestHandler<CreateTenantCommand, TenantDto>
 {
     public async Task<TenantDto> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
@@ -86,8 +87,15 @@ public class CreateTenantHandler(IamTenantDbContext context, ICognitoAuthService
 
         context.OutboxMessages.Add(outboxMessage);
 
-        // 6. Save changes (AuditInterceptor will assign CreatedBy/CreatedAt)
-        // Transaction is atomic because we save entities and outbox messages together
+        // 6. Audit Logging
+        await auditTrail.LogAsync(
+            AuditActions.CreateTenant,
+            $"Tenant: {tenant.Id}",
+            new { tenant.Name, tenant.CompanyDomain, request.AdminEmail },
+            cancellationToken);
+
+        // 7. Save changes (AuditInterceptor will assign CreatedBy/CreatedAt)
+        // Transaction is atomic because we save entities, outbox messages and audit logs together
         await context.SaveChangesAsync(cancellationToken);
 
         return new TenantDto

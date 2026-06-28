@@ -18,14 +18,19 @@ public class IdentifyUserQueryHandler(IamTenantDbContext context) : IRequestHand
         // Assuming IdentifyUser is called by BFF before login, context might not have TenantId yet.
         var user = await context.Users
             .IgnoreQueryFilters()
-            .Include(u => u.Tenant)
-            .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken);
+            .Where(u => u.Email == request.Email && !u.IsDeleted)
+            .Select(u => new 
+            { 
+                u.UserType, 
+                TenantCode = u.Tenant != null ? u.Tenant.Code : null 
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)
         {
             return new IdentifyUserResult(false, null, null);
         }
 
-        return new IdentifyUserResult(true, user.Tenant?.Code ?? "SYSTEM", user.UserType.ToString());
+        return new IdentifyUserResult(true, user.TenantCode ?? "SYSTEM", user.UserType.ToString());
     }
 }

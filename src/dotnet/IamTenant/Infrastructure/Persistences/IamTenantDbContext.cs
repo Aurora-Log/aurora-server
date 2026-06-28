@@ -27,6 +27,7 @@ public class IamTenantDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -51,6 +52,8 @@ public class IamTenantDbContext : DbContext
 
             e.HasIndex(u => u.CognitoSub).IsUnique();
             e.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();
+            e.HasIndex(u => new { u.TenantId, u.CreatedAt });
+            e.HasIndex(u => new { u.TenantId, u.Status });
 
             // MaxLength để tránh Postgres tạo ra cột 'text'
             e.Property(u => u.Email).HasMaxLength(256).IsRequired();
@@ -66,6 +69,8 @@ public class IamTenantDbContext : DbContext
             e.HasQueryFilter(t => !t.IsDeleted);
             e.HasIndex(t => t.Code).IsUnique();
             e.HasIndex(t => t.CompanyDomain).IsUnique();
+            e.HasIndex(t => t.CreatedAt);
+            e.HasIndex(t => new { t.Status, t.CreatedAt });
 
             e.Property(t => t.Name).HasMaxLength(200).IsRequired();
             e.Property(t => t.Code).HasMaxLength(50).IsRequired();
@@ -106,6 +111,29 @@ public class IamTenantDbContext : DbContext
             e.Property(o => o.EventType).HasMaxLength(256).IsRequired();
             e.Property(o => o.Payload).IsRequired();
         });
+
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.Property(a => a.Actor).HasMaxLength(128).IsRequired();
+            e.Property(a => a.Action).HasMaxLength(100).IsRequired();
+            e.Property(a => a.Resource).HasMaxLength(200).IsRequired();
+            e.Property(a => a.CorrelationId).HasMaxLength(128);
+        });
+
+        // ------------------------------------------------------------
+        // RESTRICT CASCADE DELETE CHO TENANT
+        // ------------------------------------------------------------
+        modelBuilder.Entity<Tenant>()
+            .HasMany(t => t.Users)
+            .WithOne(u => u.Tenant)
+            .HasForeignKey(u => u.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Tenant>()
+            .HasMany(t => t.Roles)
+            .WithOne(r => r.Tenant)
+            .HasForeignKey(r => r.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ============================================================
         // SEED: System Roles & Permissions mặc định
@@ -201,4 +229,5 @@ public class IamTenantDbContext : DbContext
         modelBuilder.Entity<RolePermission>().HasData(
             [.. sysAdminPerms, .. tenantAdminPerms, .. tenantStaffPerms]);
     }
+
 }

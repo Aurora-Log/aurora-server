@@ -26,23 +26,24 @@ public class CompleteInvitationCommandHandler(ICognitoAuthService cognitoService
             request.ConfirmationCode,
             cancellationToken);
 
-        // 2. Fetch User and Permissions from DB via internal command/query (reusing logic)
+        // 2. Fetch User from DB to update status
         var user = await context.Users
             .IgnoreQueryFilters()
-            .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                    .ThenInclude(r => r!.RolePermissions)
-                        .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken)
             ?? throw new Exception("User not found in database.");
 
-        var roles = user.UserRoles.Select(ur => ur.Role!.Code).Distinct().ToList();
+        // Fetch Roles and Permissions via Projection to avoid deep Includes
+        var userPermissions = await context.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Select(ur => new 
+            {
+                RoleCode = ur.Role!.Code,
+                Permissions = ur.Role.RolePermissions.Select(rp => rp.Permission!.Code).ToList()
+            })
+            .ToListAsync(cancellationToken);
 
-        var permissions = user.UserRoles
-            .SelectMany(ur => ur.Role!.RolePermissions)
-            .Select(rp => rp.Permission!.Code)
-            .Distinct()
-            .ToList();
+        var roles = userPermissions.Select(x => x.RoleCode).Distinct().ToList();
+        var permissions = userPermissions.SelectMany(x => x.Permissions).Distinct().ToList();
 
         // 3. Mark User as ACTIVE if they were PENDING/INVITED
         if (user.Status != UserStatus.Active)

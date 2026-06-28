@@ -8,5 +8,6 @@ public class UserPermissionCache
     public int Version { get; set; }
     public List<string> Permissions { get; set; } = [];
     public List<string> RoleIds { get; set; } = [];
+    public List<string> RoleCodes { get; set; } = [];
     public DateTimeOffset CachedAt { get; set; } = DateTimeOffset.UtcNow;
 }

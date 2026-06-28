@@ -28,6 +28,7 @@ public class GetUserPermissionsHandler(
             {
                 UserId = request.UserId,
                 RoleIds = cached.RoleIds,
+                RoleCodes = cached.RoleCodes,
                 Permissions = [.. cached.Permissions.Select(p => new PermissionDto { Code = p })],
                 Version = cached.Version,
                 FromCache = true
@@ -36,42 +37,45 @@ public class GetUserPermissionsHandler(
 
         // 2. Cache miss hoặc version lệch — query từ DB
         var user = await context.Users
-            .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                    .ThenInclude(r => r.RolePermissions)
-                        .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
-
-        if (user == null) throw new Shared.Exceptions.NotFoundException("User not found");
-
-        var roleIds = user.UserRoles.Select(ur => ur.RoleId.ToString()).ToList();
-        var permissions = user.UserRoles
-            .Where(ur => ur.Role != null)
-            .SelectMany(ur => ur.Role!.RolePermissions.Select(rp => rp.Permission))
-            .Where(p => p != null)
-            .DistinctBy(p => p!.Id)
-            .ToList();
+            .Where(u => u.Id == request.UserId)
+            .Select(u => new
+            {
+                u.PermissionVersion,
+                RoleIds = u.UserRoles.Select(ur => ur.RoleId.ToString()).ToList(),
+                RoleCodes = u.UserRoles.Select(ur => ur.Role!.Code).ToList(),
+                Permissions = u.UserRoles
+                    .SelectMany(ur => ur.Role!.RolePermissions.Select(rp => rp.Permission))
+                    .Where(p => p != null)
+                    .Select(p => new PermissionDto
+                    {
+                        Id = p!.Id,
+                        Code = p.Code,
+                        Module = p.Module,
+                        Description = p.Description
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+        ?? throw new Shared.Exceptions.NotFoundException("User not found");
+        
+        var permissions = user.Permissions.DistinctBy(p => p.Id).ToList();
 
         // 3. Update Redis
         var newCache = new UserPermissionCache
         {
             Version = user.PermissionVersion,
-            RoleIds = roleIds,
-            Permissions = permissions.Select(p => p!.Code).ToList()
+            RoleIds = user.RoleIds,
+            RoleCodes = user.RoleCodes,
+            Permissions = permissions.Select(p => p.Code).ToList()
         };
         await permissionCache.SetAsync(request.UserId, newCache, cancellationToken);
 
         return new UserPermissionsDto
         {
             UserId = request.UserId,
-            RoleIds = roleIds,
-            Permissions = [.. permissions.Select(p => new PermissionDto
-            {
-                Id = p.Id,
-                Code = p.Code,
-                Module = p.Module,
-                Description = p.Description
-            })],
+            RoleIds = user.RoleIds,
+            RoleCodes = user.RoleCodes,
+            Permissions = permissions,
             Version = user.PermissionVersion,
             FromCache = false
         };

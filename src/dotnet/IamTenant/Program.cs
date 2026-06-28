@@ -3,6 +3,7 @@ using IamTenant.Application.Interfaces;
 using IamTenant.GrpcServices;
 using IamTenant.Infrastructure.Auth.Cognito;
 using IamTenant.Infrastructure.Persistences;
+using IamTenant.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Shared.Extensions;
 using Shared.Interceptors;
@@ -25,6 +26,10 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 
 // ── Background Jobs ───────────────────────────────────────────────────────────
 builder.Services.AddHostedService<IamTenant.Infrastructure.BackgroundJobs.OutboxProcessorBackgroundService>();
+builder.Services.AddHostedService<IamTenant.Infrastructure.BackgroundJobs.SoftDeleteCleanupWorker>();
+
+// ── Application Services ──────────────────────────────────────────────────────
+builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
 
 // ── AWS Cognito ───────────────────────────────────────────────────────────────
 builder.Services.Configure<CognitoOptions>(builder.Configuration.GetSection("Cognito"));

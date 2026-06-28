@@ -15,7 +15,8 @@ public record AssignPermissionsToRoleCommand(Guid RoleId, List<Guid> PermissionI
 
 public class AssignPermissionsToRoleHandler(
     IamTenantDbContext context,
-    IPermissionCacheService permissionCache)
+    IPermissionCacheService permissionCache,
+    IamTenant.Application.Interfaces.IAuditTrailService auditTrail)
     : IRequestHandler<AssignPermissionsToRoleCommand, RoleDto>
 {
     public async Task<RoleDto> Handle(AssignPermissionsToRoleCommand request, CancellationToken cancellationToken)
@@ -61,6 +62,12 @@ public class AssignPermissionsToRoleHandler(
                 await permissionCache.InvalidateAsync(user.Id, cancellationToken);
             }
         }
+
+        await auditTrail.LogAsync(
+            IamTenant.Application.Constants.AuditActions.AssignPermission,
+            $"Role: {role.Id}",
+            new { AssignedPermissions = request.PermissionIds },
+            cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
 

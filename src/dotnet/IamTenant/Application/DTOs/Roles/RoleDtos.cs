@@ -24,6 +24,7 @@ public class UserPermissionsDto
 {
     public Guid UserId { get; set; }
     public List<string> RoleIds { get; set; } = [];
+    public List<string> RoleCodes { get; set; } = [];
     public List<PermissionDto> Permissions { get; set; } = [];
     public int Version { get; set; }
     public bool FromCache { get; set; }

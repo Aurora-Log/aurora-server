@@ -10,14 +10,21 @@ public class AuthGrpcService(IMediator mediator) : AuthService.AuthServiceBase
 {
     public override async Task<IdentifyUserResponse> IdentifyUser(IdentifyUserRequest request, ServerCallContext context)
     {
-        var result = await mediator.Send(new IdentifyUserQuery(request.Email));
-
-        return new IdentifyUserResponse
+        try
         {
-            Exists = result.Exists,
-            TenantCode = result.TenantCode ?? "",
-            UserType = result.UserType ?? ""
-        };
+            var result = await mediator.Send(new IdentifyUserQuery(request.Email));
+
+            return new IdentifyUserResponse
+            {
+                Exists = result.Exists,
+                TenantCode = result.TenantCode ?? "",
+                UserType = result.UserType ?? ""
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+        }
     }
 
     public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)

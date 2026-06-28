@@ -48,7 +48,6 @@ public class CreateStaffHandler(
         await context.SaveChangesAsync(cancellationToken);
 
         // Publish invitation event (snake-case name → NestJS consumer)
-        var invitationToken = Guid.CreateVersion7().ToString("N");
         await publishEndpoint.Publish(new TenantStaffCreatedEvent
         {
             TenantId = tenant.Id,
