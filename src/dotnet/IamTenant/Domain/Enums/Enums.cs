@@ -27,13 +27,11 @@ public enum StaffType
 {
     Normal,
     Compliance,
-    CarrierMarketplace,
     Negotiation,
     CustomerAssistant,
     RoutePlanning,
     FinancialTax,
     GpsTracking,
     BillingSettlement,
-    AiOps,
     Ocr
 }

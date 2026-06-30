@@ -3,6 +3,7 @@ using IamTenant.Application.DTOs.Roles;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Cache;
+using Shared.Constants;
 
 namespace IamTenant.Application.Commands.Permissions;
 
@@ -64,7 +65,7 @@ public class AssignPermissionsToRoleHandler(
         }
 
         await auditTrail.LogAsync(
-            IamTenant.Application.Constants.AuditActions.AssignPermission,
+            AuditActions.AssignPermission,
             $"Role: {role.Id}",
             new { AssignedPermissions = request.PermissionIds },
             cancellationToken);
