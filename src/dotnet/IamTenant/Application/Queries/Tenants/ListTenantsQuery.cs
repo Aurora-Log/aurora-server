@@ -15,7 +15,6 @@ public class ListTenantsHandler(IamTenantDbContext context) : IRequestHandler<Li
     public async Task<PagedResult<TenantDto>> Handle(ListTenantsQuery request, CancellationToken cancellationToken)
     {
         var query = context.Tenants
-            .AsNoTracking()
             .Where(t => !t.IsDeleted)
             .OrderByDescending(t => t.CreatedAt)
             .Select(t => new TenantDto

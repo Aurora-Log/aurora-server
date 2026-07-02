@@ -21,5 +21,6 @@ public class StaffDto
     public string LastName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string UserType { get; set; } = string.Empty;
+    public string StaffType { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
 }

@@ -24,6 +24,7 @@ public class GetStaffHandler(IamTenantDbContext context) : IRequestHandler<GetSt
             LastName = staffUser.LastName,
             UserType = staffUser.UserType.ToString(),
             Status = staffUser.Status.ToString(),
+            StaffType = staffUser.StaffType.ToString(),
             CreatedAt = staffUser.CreatedAt
         };
     }

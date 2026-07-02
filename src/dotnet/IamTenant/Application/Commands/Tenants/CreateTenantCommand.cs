@@ -7,6 +7,7 @@ using IamTenant.Application.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Events;
+using IamTenant.Domain.Enums;
 
 namespace IamTenant.Application.Commands.Tenants;
 
@@ -58,8 +59,8 @@ public class CreateTenantHandler(IamTenantDbContext context, ICognitoAuthService
         {
             TenantId = tenant.Id,
             Email = request.AdminEmail,
-            UserType = IamTenant.Domain.Enums.UserType.TenantAdmin,
-            Status = IamTenant.Domain.Enums.UserStatus.Invited,
+            UserType = UserType.TenantAdmin,
+            Status = UserStatus.Invited,
         };
 
         // Cognito AdminCreateUser

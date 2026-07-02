@@ -29,6 +29,7 @@ public class UpdateStaffHandler(IamTenantDbContext context) : IRequestHandler<Up
             LastName = staffUser.LastName,
             UserType = staffUser.UserType.ToString(),
             Status = staffUser.Status.ToString(),
+            StaffType = staffUser.StaffType.ToString(),
             CreatedAt = staffUser.CreatedAt
         };
     }

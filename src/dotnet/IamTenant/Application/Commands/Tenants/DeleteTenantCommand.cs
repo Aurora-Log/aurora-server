@@ -14,9 +14,8 @@ public class DeleteTenantHandler(IamTenantDbContext context) : IRequestHandler<D
             .FirstOrDefaultAsync(t => t.Id == request.Id && !t.IsDeleted, cancellationToken) 
                 ?? throw new Exception("Tenant not found");
 
-        tenant.DeletedAt = DateTimeOffset.UtcNow;
-        // The AuditInterceptor will set UpdatedBy and UpdatedAt
-
+        tenant.SoftDelete();
+        
         await context.SaveChangesAsync(cancellationToken);
     }
 }

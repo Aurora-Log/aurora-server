@@ -12,7 +12,6 @@ public enum UserStatus
 {
     Invited,
     Active,
-    Suspended,
     Blocked
 }
 
@@ -20,7 +19,8 @@ public enum UserType
 {
     SystemAdmin,
     TenantAdmin,
-    TenantStaff
+    TenantStaff,
+    TenantManager
 }
 
 public enum StaffType

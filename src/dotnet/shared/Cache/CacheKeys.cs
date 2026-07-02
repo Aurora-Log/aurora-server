@@ -9,5 +9,5 @@ public static class CacheKeys
     public static string UserPermissions(Guid userId) => $"user:{userId}:permissions";
 
     /// <summary>tenant:{tenantId}:config — Lưu metadata của tenant</summary>
-    public static string TenantConfig(Guid tenantId) => $"tenant:{tenantId}:config";
+    // public static string TenantConfig(Guid tenantId) => $"tenant:{tenantId}:config";
 }

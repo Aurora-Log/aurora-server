@@ -16,6 +16,7 @@ public class GetRoleHandler(IamTenantDbContext context) : IRequestHandler<GetRol
     public async Task<RoleDto> Handle(GetRoleQuery request, CancellationToken cancellationToken)
     {
         var role = await context.Roles
+            .AsNoTracking()
             .Where(r => r.Id == request.Id)
             .Select(r => new RoleDto
             {

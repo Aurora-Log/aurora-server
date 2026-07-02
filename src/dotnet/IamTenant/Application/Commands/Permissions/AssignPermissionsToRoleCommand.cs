@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.Cache;
 using Shared.Constants;
+using IamTenant.Application.Constants;
 
 namespace IamTenant.Application.Commands.Permissions;
 

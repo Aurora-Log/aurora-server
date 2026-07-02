@@ -6,19 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IamTenant.Infrastructure.Persistences;
 
-public class IamTenantDbContext : DbContext
+public class IamTenantDbContext(
+    DbContextOptions<IamTenantDbContext> options,
+    ICurrentUserService currentUser,
+    AuditSaveChangesInterceptor auditInterceptor) : DbContext(options)
 {
-    private readonly ICurrentUserService _currentUser;
-    private readonly AuditSaveChangesInterceptor _auditInterceptor;
-
-    public IamTenantDbContext(
-        DbContextOptions<IamTenantDbContext> options,
-        ICurrentUserService currentUser,
-        AuditSaveChangesInterceptor auditInterceptor) : base(options)
-    {
-        _currentUser = currentUser;
-        _auditInterceptor = auditInterceptor;
-    }
+    private readonly ICurrentUserService _currentUser = currentUser;
+    private readonly AuditSaveChangesInterceptor _auditInterceptor = auditInterceptor;
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
@@ -45,7 +39,6 @@ public class IamTenantDbContext : DbContext
 
         modelBuilder.Entity<User>(e =>
         {
-            // Filter: chỉ lấy User thuộc TenantId hiện tại (nếu có) và chưa bị xoá
             e.HasQueryFilter(u =>
                 (!_currentUser.TenantId.HasValue || u.TenantId == _currentUser.TenantId)
                 && !u.IsDeleted);

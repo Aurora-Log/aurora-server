@@ -20,7 +20,7 @@ public class SoftDeleteCleanupWorker(
         try
         {
             // Thực thi ngay lần đầu khởi động (hoặc có thể bỏ qua dòng này nếu chỉ muốn đợi sau 24h)
-            await DoWorkAsync(stoppingToken);
+            // await DoWorkAsync(stoppingToken);
 
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {

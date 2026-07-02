@@ -9,7 +9,7 @@ public class Tenant : AuditableEntity
     public static Tenant Create(string name, string companyDomain, string? taxCode, string planType, Guid idempotencyKey)
     {
         if (string.IsNullOrWhiteSpace(companyDomain))
-            throw new Shared.Exceptions.DomainException("Company domain is required.");
+            throw new DomainException("Company domain is required.");
 
         return new Tenant
         {

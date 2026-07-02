@@ -2,7 +2,7 @@ namespace IamTenant.Domain;
 
 public class AuditLog
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.CreateVersion7();
     public Guid? TenantId { get; set; }
     
     // UserId hoặc System

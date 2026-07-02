@@ -53,6 +53,7 @@ public class AssignRolesHandler(
             LastName = user.LastName,
             UserType = user.UserType.ToString(),
             Status = user.Status.ToString(),
+            StaffType = user.StaffType.ToString(),
             CreatedAt = user.CreatedAt
         };
     }

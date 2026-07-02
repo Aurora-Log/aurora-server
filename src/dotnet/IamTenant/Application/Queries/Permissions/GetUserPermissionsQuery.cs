@@ -66,7 +66,7 @@ public class GetUserPermissionsHandler(
             Version = user.PermissionVersion,
             RoleIds = user.RoleIds,
             RoleCodes = user.RoleCodes,
-            Permissions = permissions.Select(p => p.Code).ToList()
+            Permissions = [.. permissions.Select(p => p.Code)]
         };
         await permissionCache.SetAsync(request.UserId, newCache, cancellationToken);
 
